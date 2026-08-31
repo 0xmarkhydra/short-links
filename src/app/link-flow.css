@@ -5,6 +5,9 @@
 .quick-url-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
 .quick-url-row input{min-height:48px!important;font-size:15px!important;border-radius:10px!important}
 .quick-create-button{min-height:48px;min-width:110px;padding-inline:18px;white-space:nowrap}
+.quick-create-button:disabled{opacity:.72;cursor:wait;filter:none!important}
+.button-spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sharelink-spin .7s linear infinite}
+@keyframes sharelink-spin{to{transform:rotate(360deg)}}
 .quick-url-label>small{font-size:10px;color:#707b89;font-weight:500}
 
 .advanced-fields{margin-top:2px;border-top:1px solid var(--hairline,#1d222a);padding-top:10px}
@@ -46,3 +49,5 @@
   .external-gate-actions .btn{width:100%;min-height:42px}
   .external-gate-actions .btn-primary{grid-row:1}
 }
+
+@media (prefers-reduced-motion:reduce){.button-spinner{animation-duration:1.5s}}
