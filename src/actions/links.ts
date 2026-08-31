@@ -6,26 +6,22 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { getDestinationMetadata } from "@/lib/destination-meta";
-import { cleanText, normalizeSlug, randomSlugSuffix, slugify, validateDestinationUrl } from "@/lib/validation";
+import { cleanText, normalizeSlug, randomSlugSuffix, validateDestinationUrl } from "@/lib/validation";
 
 function fail(path: string, message: string): never {
   redirect(`${path}?error=${encodeURIComponent(message)}`);
 }
 
-async function availableSlug(base: string, currentId?: string) {
-  const normalized = normalizeSlug(base);
-  if (normalized.error) throw new Error(normalized.error);
-  let candidate = normalized.slug;
-  for (let i = 0; i < 6; i++) {
+async function availableAutoSlug() {
+  for (let i = 0; i < 12; i++) {
+    const candidate = randomSlugSuffix();
     const found = await query(
-      `SELECT 1 FROM share_links WHERE slug = $1 AND ($2::uuid IS NULL OR id <> $2::uuid) LIMIT 1`,
-      [candidate, currentId ?? null]
+      `SELECT 1 FROM share_links WHERE slug = $1 LIMIT 1`,
+      [candidate]
     );
     if (!found.rowCount) return candidate;
-    const compactBase = normalized.slug.slice(0, 22).replace(/-+$/g, "") || "link";
-    candidate = `${compactBase}-${randomSlugSuffix().slice(0, 4)}`;
   }
-  throw new Error("Không thể tạo slug duy nhất. Vui lòng thử slug khác.");
+  throw new Error("Không thể tạo slug duy nhất. Vui lòng thử lại.");
 }
 
 function normalizeDestinationInput(value: string) {
@@ -48,24 +44,6 @@ function fallbackName(destinationUrl: string) {
   } catch {
     return "Share Link";
   }
-}
-
-function compactSlug(input: string) {
-  const full = slugify(input);
-  if (!full) return "";
-  const words = full.split("-").filter(Boolean).slice(0, 3);
-  const compact = words.join("-").slice(0, 28).replace(/-+$/g, "");
-  return compact.length >= 3 ? compact : full.slice(0, 28).replace(/-+$/g, "");
-}
-
-function automaticSlugSeed(name: string, destinationUrl: string) {
-  const candidates = [compactSlug(name), compactSlug(fallbackName(destinationUrl))];
-  for (const candidate of candidates) {
-    if (!candidate) continue;
-    const normalized = normalizeSlug(candidate);
-    if (!normalized.error) return normalized.slug;
-  }
-  return `link-${randomSlugSuffix().slice(0, 4)}`;
 }
 
 export async function createLinkAction(formData: FormData) {
@@ -98,7 +76,7 @@ export async function createLinkAction(formData: FormData) {
       if (exists.rowCount) fail("/create-link", "Slug này đã được sử dụng. Vui lòng chọn slug khác.");
       slug = normalized.slug;
     } else {
-      slug = await availableSlug(automaticSlugSeed(name, destinationUrl));
+      slug = await availableAutoSlug();
     }
   } catch (error) {
     fail("/create-link", error instanceof Error ? error.message : "Không thể tự tạo đường dẫn ngắn.");
