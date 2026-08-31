@@ -55,12 +55,12 @@ export async function createLinkAction(formData: FormData) {
   const destinationMeta = await getDestinationMetadata(destinationUrl);
   const name = (
     customName ||
-    cleanText(destinationMeta?.title, 120) ||
-    cleanText(destinationMeta?.siteName, 120) ||
+    cleanText(destinationMeta?.title ?? null, 120) ||
+    cleanText(destinationMeta?.siteName ?? null, 120) ||
     fallbackName(destinationUrl)
   ).slice(0, 120);
   const description = (
-    customDescription || cleanText(destinationMeta?.description, 500)
+    customDescription || cleanText(destinationMeta?.description ?? null, 500)
   ).slice(0, 500);
 
   const seed = requestedSlug || slugify(name) || slugify(fallbackName(destinationUrl)) || `link-${randomSlugSuffix()}`;
