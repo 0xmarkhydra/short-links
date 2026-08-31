@@ -4,7 +4,9 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { query } from "@/lib/db";
 import { recordValidVisit } from "@/lib/visits";
+import { getDestinationMetadata } from "@/lib/destination-meta";
 import { Logo } from "@/components/Logo";
+import { ExternalLinkGate } from "@/components/ExternalLinkGate";
 import { SITE_NAME } from "@/lib/site";
 
 export const dynamic="force-dynamic";
@@ -30,23 +32,28 @@ export async function generateMetadata({params}:{params:Promise<{slug:string}>})
   if(!link){
     return { title:"Share Link không tồn tại", robots:{index:false,follow:false} };
   }
-  const description=(link.description?.trim() || `Truy cập ${link.name} an toàn qua ${SITE_NAME}.`).slice(0,160);
-  const image=`/s/${encodeURIComponent(slug)}/opengraph-image`;
+
+  const destinationMeta = link.status === "ACTIVE" ? await getDestinationMetadata(link.destination_url) : null;
+  const title=(destinationMeta?.title || link.name).slice(0,120);
+  const description=(destinationMeta?.description || link.description?.trim() || `Mở ${link.name} qua ${SITE_NAME}.`).slice(0,200);
+  const fallbackImage=`/s/${encodeURIComponent(slug)}/opengraph-image`;
+  const image=destinationMeta?.image || fallbackImage;
+
   return {
-    title:link.name,
+    title,
     description,
     alternates:{canonical:`/s/${slug}`},
     robots:{index:false,follow:link.status==='ACTIVE'},
     openGraph:{
       type:"website",
       url:`/s/${slug}`,
-      title:link.name,
+      title,
       description,
-      siteName:SITE_NAME,
+      siteName:destinationMeta?.siteName || SITE_NAME,
       locale:"vi_VN",
-      images:[{url:image,width:1200,height:630,alt:`${link.name} — ${SITE_NAME}`}]
+      images:[image]
     },
-    twitter:{card:"summary_large_image",title:link.name,description,images:[image]}
+    twitter:{card:"summary_large_image",title,description,images:[image]}
   };
 }
 
@@ -59,6 +66,6 @@ export default async function PublicSharePage({params}:{params:Promise<{slug:str
   const refreshed=await query<{visit_count:string}>(`SELECT visit_count::text FROM share_links WHERE id=$1`,[link.id]);
   const count=refreshed.rows[0]?.visit_count??link.visit_count;
   let destinationHost=link.destination_url; try{destinationHost=new URL(link.destination_url).hostname}catch{}
-  return <PublicFrame><div className="public-card"><span className="eyebrow">SHARE LINK</span><h1>{link.name}</h1>{link.description&&<p>{link.description}</p>}<div className="destination"><small>Website đích</small><strong>{destinationHost}</strong></div><a className="btn btn-primary btn-wide btn-lg" href={link.destination_url} target="_blank" rel="noopener noreferrer nofollow">TRUY CẬP LINK →</a><div className="public-visits">Lượt truy cập: <strong>{Number(count).toLocaleString('vi-VN')}</strong></div></div></PublicFrame>;
+  return <PublicFrame><div className="public-card"><span className="eyebrow">SHARE LINK</span><h1>{link.name}</h1>{link.description&&<p>{link.description}</p>}<div className="destination"><small>Website đích</small><strong>{destinationHost}</strong></div><ExternalLinkGate destinationUrl={link.destination_url} destinationHost={destinationHost}/><div className="public-visits">Lượt truy cập: <strong>{Number(count).toLocaleString('vi-VN')}</strong></div></div></PublicFrame>;
 }
 function PublicFrame({children}:{children:React.ReactNode}){return <div className="public-page"><div className="public-top"><Logo/></div>{children}<small className="public-footer">Được bảo vệ bởi SHARE LINK</small></div>}

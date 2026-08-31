@@ -24,6 +24,10 @@ function detectOs(ua: string) {
   return "Other";
 }
 
+function isAutomatedUserAgent(ua: string) {
+  return /bot|crawler|spider|preview|facebookexternalhit|facebot|twitterbot|linkedinbot|slackbot|discordbot|telegrambot|whatsapp|google-inspectiontool|bingpreview|zalo/i.test(ua);
+}
+
 function visitorHash(ip: string, ua: string) {
   const raw = `${ip}|${ua}`;
   const secret = process.env.ANALYTICS_HASH_SECRET;
@@ -39,6 +43,8 @@ export async function recordValidVisit(input: {
   country?: string | null;
   referrer?: string | null;
 }) {
+  if (!input.userAgent || isAutomatedUserAgent(input.userAgent)) return false;
+
   const fingerprint = visitorHash(input.ip, input.userAgent);
   const client = await db.connect();
   try {

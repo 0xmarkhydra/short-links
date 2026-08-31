@@ -4,6 +4,7 @@ import "./globals.css";
 import "./mobile.css";
 import "./compact.css";
 import "./polish.css";
+import "./link-flow.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
