@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { recordValidVisit } from "@/lib/visits";
@@ -11,6 +12,14 @@ type GoLink = {
   risk_state: RiskState;
   risk_checked_at: Date | null;
 };
+
+function resolveAnonymousVisitorId(request: NextRequest) {
+  const existing = request.cookies.get("sl_vid")?.value || "";
+  if (/^[A-Za-z0-9_-]{16,80}$/.test(existing)) {
+    return { id: existing, isNew: false };
+  }
+  return { id: randomUUID(), isNew: true };
+}
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -34,14 +43,26 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.redirect(new URL(`/s/${slug}`, request.url));
   }
 
+  const visitor = resolveAnonymousVisitorId(request);
   const ip = (request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown").split(",")[0].trim();
   await recordValidVisit({
     linkId: link.id,
     ip,
+    visitorId: visitor.id,
     userAgent: request.headers.get("user-agent") || "",
     country: request.headers.get("x-vercel-ip-country") || request.headers.get("cf-ipcountry"),
     referrer: request.headers.get("referer")
   });
 
-  return NextResponse.redirect(link.destination_url, 307);
+  const response = NextResponse.redirect(link.destination_url, 307);
+  if (visitor.isNew) {
+    response.cookies.set("sl_vid", visitor.id, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365
+    });
+  }
+  return response;
 }
