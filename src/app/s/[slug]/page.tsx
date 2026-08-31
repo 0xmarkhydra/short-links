@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import { cache } from "react";
-import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { query } from "@/lib/db";
-import { recordValidVisit } from "@/lib/visits";
 import { getDestinationMetadata } from "@/lib/destination-meta";
 import { Logo } from "@/components/Logo";
 import { ExternalLinkGate } from "@/components/ExternalLinkGate";
 import { SITE_NAME } from "@/lib/site";
+import { riskNeedsRefresh, scanAndPersistLinkRisk, type RiskState } from "@/lib/risk";
 
 export const dynamic="force-dynamic";
 
@@ -19,12 +18,15 @@ type PublicLink = {
   slug:string;
   status:string;
   visit_count:string;
+  risk_state:RiskState;
+  risk_score:number;
+  risk_checked_at:Date|null;
 };
 
 const getPublicLink = cache(async (slug:string) => {
   if (!/^[a-z0-9-]{3,64}$/.test(slug)) return null;
   const result=await query<PublicLink>(
-    `SELECT id,name,destination_url,description,slug,status,visit_count::text
+    `SELECT id,name,destination_url,description,slug,status,visit_count::text,risk_state,risk_score,risk_checked_at
      FROM share_links
      WHERE status<>'DELETED' AND (slug=$1 OR slug LIKE $2)
      ORDER BY CASE WHEN slug=$1 THEN 0 ELSE 1 END
@@ -43,7 +45,15 @@ export async function generateMetadata({params}:{params:Promise<{slug:string}>})
     return { title:"Share Link không tồn tại", robots:{index:false,follow:false} };
   }
 
-  const destinationMeta = link.status === "ACTIVE" ? await getDestinationMetadata(link.destination_url) : null;
+  if (link.status !== "ACTIVE" || link.risk_state === "BLOCKED") {
+    return {
+      title: "Liên kết không khả dụng",
+      description: "SHARE LINK đã hạn chế truy cập liên kết này.",
+      robots: { index: false, follow: false }
+    };
+  }
+
+  const destinationMeta = await getDestinationMetadata(link.destination_url);
   const title=(destinationMeta?.title || link.name).slice(0,120);
   const description=(destinationMeta?.description || link.description?.trim() || `Mở ${link.name} qua ${SITE_NAME}.`).slice(0,200);
   const fallbackImage=`/s/${encodeURIComponent(slug)}/opengraph-image`;
@@ -53,7 +63,7 @@ export async function generateMetadata({params}:{params:Promise<{slug:string}>})
     title,
     description,
     alternates:{canonical:`/s/${slug}`},
-    robots:{index:false,follow:link.status==='ACTIVE'},
+    robots:{index:false,follow:true},
     openGraph:{
       type:"website",
       url:`/s/${slug}`,
@@ -70,12 +80,26 @@ export async function generateMetadata({params}:{params:Promise<{slug:string}>})
 export default async function PublicSharePage({params}:{params:Promise<{slug:string}>}){
   const {slug}=await params;
   const link=await getPublicLink(slug); if(!link) notFound();
+
   if(link.status==='LOCKED')return <PublicFrame><div className="public-status"><span className="status-icon">!</span><h1>Share Link tạm thời bị khóa</h1><p>Liên kết này hiện không khả dụng. Vui lòng liên hệ người chia sẻ.</p></div></PublicFrame>;
-  const h=await headers(); const ua=h.get('user-agent')||''; const ip=(h.get('x-forwarded-for')||h.get('x-real-ip')||'unknown').split(',')[0].trim();
-  await recordValidVisit({linkId:link.id,ip,userAgent:ua,country:h.get('x-vercel-ip-country')||h.get('cf-ipcountry'),referrer:h.get('referer')});
-  const refreshed=await query<{visit_count:string}>(`SELECT visit_count::text FROM share_links WHERE id=$1`,[link.id]);
-  const count=refreshed.rows[0]?.visit_count??link.visit_count;
+
+  let riskState = link.risk_state;
+  let riskScore = Number(link.risk_score) || 0;
+  if (riskNeedsRefresh(link.risk_checked_at)) {
+    const assessment = await scanAndPersistLinkRisk(link.id, link.destination_url, "ACCESS");
+    riskState = assessment.state;
+    riskScore = assessment.score;
+  }
+
+  if (riskState === "BLOCKED") {
+    return <PublicFrame><div className="public-status"><span className="status-icon">!</span><span className="eyebrow">SECURITY BLOCK</span><h1>Liên kết đã bị chặn</h1><p>Hệ thống phát hiện website đích có tín hiệu liên quan tới phishing, malware hoặc nội dung nguy hiểm. SHARE LINK sẽ không chuyển tiếp liên kết này.</p><a className="btn btn-secondary" href="/report">Báo cáo / yêu cầu xem xét</a></div></PublicFrame>;
+  }
+
+  if (riskState === "SAFE") {
+    redirect(`/go/${link.slug}`);
+  }
+
   let destinationHost=link.destination_url; try{destinationHost=new URL(link.destination_url).hostname}catch{}
-  return <PublicFrame><div className="public-card"><span className="eyebrow">SHARE LINK</span><h1>{link.name}</h1>{link.description&&<p>{link.description}</p>}<div className="destination"><small>Website đích</small><strong>{destinationHost}</strong></div><ExternalLinkGate destinationUrl={link.destination_url} destinationHost={destinationHost}/><div className="public-visits">Lượt truy cập: <strong>{Number(count).toLocaleString('vi-VN')}</strong></div></div></PublicFrame>;
+  return <PublicFrame><div className="public-card"><span className="eyebrow">KIỂM TRA AN TOÀN</span><h1>Link này cần bạn kiểm tra thêm</h1><p>SHARE LINK phát hiện một số tín hiệu bất thường ở URL đích. Điều này không đồng nghĩa website chắc chắn độc hại.</p><div className="destination"><small>Website đích</small><strong>{destinationHost}</strong></div><ExternalLinkGate destinationUrl={`/go/${link.slug}`} destinationHost={destinationHost}/><div className="public-visits">Risk score: <strong>{riskScore}/100</strong> · <a href="/report">Báo cáo link</a></div></div></PublicFrame>;
 }
-function PublicFrame({children}:{children:React.ReactNode}){return <div className="public-page"><div className="public-top"><Logo/></div>{children}<small className="public-footer">Được bảo vệ bởi SHARE LINK</small></div>}
+function PublicFrame({children}:{children:React.ReactNode}){return <div className="public-page"><div className="public-top"><Logo/></div>{children}<small className="public-footer">Được bảo vệ bởi SHARE LINK · <a href="/report">Báo cáo liên kết</a></small></div>}
