@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { getDestinationMetadata } from "@/lib/destination-meta";
+import { scanAndPersistLinkRisk } from "@/lib/risk";
 import { cleanText, normalizeSlug, randomSlugSuffix, validateDestinationUrl } from "@/lib/validation";
 
 function fail(path: string, message: string): never {
@@ -88,6 +89,8 @@ export async function createLinkAction(formData: FormData) {
      VALUES ($1,$2,$3,$4,$5,$6)`,
     [id, user.id, name, destinationUrl, description || null, slug!]
   );
+
+  await scanAndPersistLinkRisk(id, destinationUrl, "CREATE");
   redirect(`/create-link?created=${id}`);
 }
 
@@ -95,7 +98,7 @@ export async function updateLinkAction(formData: FormData) {
   const user = await requireUser();
   const id = cleanText(formData.get("id"), 100);
   const name = cleanText(formData.get("name"), 120);
-  const destinationUrl = cleanText(formData.get("destinationUrl"), 2000);
+  const destinationUrl = normalizeDestinationInput(cleanText(formData.get("destinationUrl"), 2000));
   const description = cleanText(formData.get("description"), 500);
   const rawSlug = cleanText(formData.get("slug"), 64);
   if (!name) fail(`/my-links/${id}/edit`, "Tên Link không được để trống.");
@@ -111,6 +114,8 @@ export async function updateLinkAction(formData: FormData) {
     [name, destinationUrl, description || null, normalized.slug, id, user.id]
   );
   if (!updated.rowCount) fail("/my-links", "Không tìm thấy Share Link hoặc bạn không có quyền chỉnh sửa.");
+
+  await scanAndPersistLinkRisk(id, destinationUrl, "UPDATE");
   redirect(`/my-links/${id}/edit?success=${encodeURIComponent("Cập nhật Share Link thành công!")}`);
 }
 
