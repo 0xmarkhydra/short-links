@@ -26,9 +26,9 @@ const features = [
   ["01", "Tạo Share Link", "Biến URL dài thành liên kết gọn, dễ nhớ và dễ chia sẻ."],
   ["02", "Quản lý liên kết", "Chỉnh sửa, sao chép, xem trạng thái và quản lý link trong một nơi."],
   ["03", "Theo dõi truy cập", "Thống kê visit thật theo ngày, thiết bị, trình duyệt và nguồn truy cập."],
-  ["04", "Hệ thống tài khoản", "Tài khoản riêng với session an toàn và dữ liệu được phân tách theo User."],
-  ["05", "Quản lý Admin", "Admin kiểm soát User, trạng thái link và lịch sử thao tác từ backend."],
-  ["06", "Bảo mật dữ liệu", "Mật khẩu hash, cookie HttpOnly, truy vấn tham số và kiểm tra quyền server-side."]
+  ["04", "Auto Risk Scan", "Tự quét URL lúc tạo, khi mở và khi có báo cáo để phát hiện phishing hoặc malware."],
+  ["05", "Quản lý Admin", "Admin có Risk Queue, quét lại, khóa link và theo dõi lịch sử xử lý."],
+  ["06", "Báo cáo chống abuse", "Report kích hoạt quét lại tự động nhưng không khóa mù quáng chỉ vì một báo cáo."]
 ];
 
 const structuredData = {
@@ -78,9 +78,9 @@ export default function LandingPage() {
           <div className="hero-copy">
             <span className="eyebrow">QUẢN LÝ LIÊN KẾT THÔNG MINH</span>
             <h1>CHIA SẺ LINK<br/><span>NHANH CHÓNG</span></h1>
-            <p>Tạo và quản lý các liên kết của bạn trong một giao diện đơn giản, nhanh chóng và chuyên nghiệp.</p>
+            <p>Tạo link ngắn, redirect nhanh và tự kiểm tra URL có dấu hiệu phishing, malware hoặc abuse.</p>
             <div className="hero-actions"><Link className="btn btn-primary" href="/register">Bắt đầu ngay</Link><Link className="btn btn-secondary" href="/login">Đăng nhập</Link></div>
-            <div className="trust-row"><span>✓ Dữ liệu thật</span><span>✓ Không fake analytics</span><span>✓ Mobile-first</span></div>
+            <div className="trust-row"><span>✓ Auto risk scan</span><span>✓ Không fake analytics</span><span>✓ Mobile-first</span></div>
           </div>
           <div className="hero-preview" aria-hidden="true">
             <div className="preview-glow"/>
@@ -93,11 +93,11 @@ export default function LandingPage() {
           </div>
         </section>
         <section className="feature-section container" id="about">
-          <div className="section-heading"><span className="eyebrow">MỌI THỨ BẠN CẦN</span><h2>Một hệ thống link. Đầy đủ công cụ.</h2><p>Thiết kế để dùng nhanh trên điện thoại nhưng vẫn mạnh khi quản trị trên desktop.</p></div>
+          <div className="section-heading"><span className="eyebrow">MỌI THỨ BẠN CẦN</span><h2>Một hệ thống link. Đầy đủ công cụ.</h2><p>Link an toàn đi thẳng. Link đáng ngờ hiện cảnh báo. Link nguy hiểm bị chặn tự động.</p></div>
           <div className="feature-grid">{features.map(([n,title,desc])=><article className="feature-card" key={n}><span>{n}</span><h3>{title}</h3><p>{desc}</p></article>)}</div>
         </section>
       </main>
-      <footer className="footer"><div className="container footer-inner"><Logo/><div><Link href="/terms">Điều khoản sử dụng</Link><Link href="/privacy">Chính sách bảo mật</Link><a href="mailto:support@example.com">Liên hệ</a></div><small>© {new Date().getFullYear()} SHARE LINK.</small></div></footer>
+      <footer className="footer"><div className="container footer-inner"><Logo/><div><Link href="/terms">Điều khoản sử dụng</Link><Link href="/privacy">Chính sách bảo mật</Link><Link href="/report">Báo cáo liên kết</Link></div><small>© {new Date().getFullYear()} SHARE LINK.</small></div></footer>
     </div>
   );
 }
