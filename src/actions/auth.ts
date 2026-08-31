@@ -58,12 +58,12 @@ export async function loginAction(formData: FormData) {
   }
   if (user.status === "LOCKED") go("/login", "error", "Tài khoản này đang bị khóa.");
   await createSession(user.id, remember);
-  redirect("/dashboard?success=Đăng+nhập+thành+công!");
+  go("/dashboard", "success", "Đăng nhập thành công!");
 }
 
 export async function logoutAction() {
   await destroyCurrentSession();
-  redirect("/login?success=Đã+đăng+xuất.");
+  go("/login", "success", "Đã đăng xuất.");
 }
 
 export async function forgotPasswordAction(formData: FormData) {
@@ -104,7 +104,7 @@ export async function bootstrapAdminAction(formData: FormData) {
     [id, username, email || null, await hashPassword(password)]
   );
   await createSession(id, true);
-  redirect("/admin?success=Admin+đầu+tiên+đã+được+tạo.");
+  go("/admin", "success", "Admin đầu tiên đã được tạo.");
 }
 
 export async function redirectAuthenticatedUser() {
