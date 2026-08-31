@@ -28,43 +28,62 @@ function isAutomatedUserAgent(ua: string) {
   return /bot|crawler|spider|preview|facebookexternalhit|facebot|twitterbot|linkedinbot|slackbot|discordbot|telegrambot|whatsapp|google-inspectiontool|bingpreview|zalo/i.test(ua);
 }
 
-function visitorHash(ip: string, ua: string) {
-  const raw = `${ip}|${ua}`;
+function hashVisitorValue(value: string) {
   const secret = process.env.ANALYTICS_HASH_SECRET;
   return secret
-    ? createHmac("sha256", secret).update(raw).digest("hex")
-    : createHash("sha256").update(raw).digest("hex");
+    ? createHmac("sha256", secret).update(value).digest("hex")
+    : createHash("sha256").update(value).digest("hex");
+}
+
+function resolveVisitor(input: { visitorId?: string | null; ip: string; userAgent: string }) {
+  if (input.visitorId) {
+    return {
+      hash: hashVisitorValue(`cookie:${input.visitorId}`),
+      source: "COOKIE" as const
+    };
+  }
+  return {
+    hash: hashVisitorValue(`fingerprint:${input.ip}|${input.userAgent}`),
+    source: "FINGERPRINT" as const
+  };
 }
 
 export async function recordValidVisit(input: {
   linkId: string;
   ip: string;
   userAgent: string;
+  visitorId?: string | null;
   country?: string | null;
   referrer?: string | null;
 }) {
   if (!input.userAgent || isAutomatedUserAgent(input.userAgent)) return false;
 
-  const fingerprint = visitorHash(input.ip, input.userAgent);
+  const visitor = resolveVisitor(input);
   const client = await db.connect();
   try {
     await client.query("BEGIN");
-    const recent = await client.query(
-      `SELECT 1 FROM visits
-       WHERE link_id = $1 AND visitor_hash = $2 AND created_at > NOW() - INTERVAL '60 seconds'
-       LIMIT 1`,
-      [input.linkId, fingerprint]
+    const history = await client.query<{ seen_before: boolean; seen_recently: boolean }>(
+      `SELECT
+         EXISTS(SELECT 1 FROM visits WHERE link_id=$1 AND visitor_hash=$2) AS seen_before,
+         EXISTS(SELECT 1 FROM visits WHERE link_id=$1 AND visitor_hash=$2 AND created_at > NOW() - INTERVAL '60 seconds') AS seen_recently`,
+      [input.linkId, visitor.hash]
     );
-    if (recent.rowCount) {
+    const seenBefore = Boolean(history.rows[0]?.seen_before);
+    const seenRecently = Boolean(history.rows[0]?.seen_recently);
+
+    if (seenRecently) {
       await client.query("COMMIT");
       return false;
     }
+
     await client.query(
-      `INSERT INTO visits (link_id, visitor_hash, user_agent, device, browser, os, country, referrer)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      `INSERT INTO visits (link_id, visitor_hash, visitor_source, is_returning, user_agent, device, browser, os, country, referrer)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [
         input.linkId,
-        fingerprint,
+        visitor.hash,
+        visitor.source,
+        seenBefore,
         input.userAgent.slice(0, 1000),
         detectDevice(input.userAgent),
         detectBrowser(input.userAgent),
