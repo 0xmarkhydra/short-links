@@ -1,15 +1,58 @@
+import type { Metadata } from "next";
+import { cache } from "react";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { query } from "@/lib/db";
 import { recordValidVisit } from "@/lib/visits";
 import { Logo } from "@/components/Logo";
+import { SITE_NAME } from "@/lib/site";
 
 export const dynamic="force-dynamic";
 
+type PublicLink = {
+  id:string;
+  name:string;
+  destination_url:string;
+  description:string|null;
+  slug:string;
+  status:string;
+  visit_count:string;
+};
+
+const getPublicLink = cache(async (slug:string) => {
+  const result=await query<PublicLink>(`SELECT id,name,destination_url,description,slug,status,visit_count::text FROM share_links WHERE slug=$1 AND status<>'DELETED' LIMIT 1`,[slug]);
+  return result.rows[0] ?? null;
+});
+
+export async function generateMetadata({params}:{params:Promise<{slug:string}>}):Promise<Metadata>{
+  const {slug}=await params;
+  const link=await getPublicLink(slug);
+  if(!link){
+    return { title:"Share Link không tồn tại", robots:{index:false,follow:false} };
+  }
+  const description=(link.description?.trim() || `Truy cập ${link.name} an toàn qua ${SITE_NAME}.`).slice(0,160);
+  const image=`/s/${encodeURIComponent(slug)}/opengraph-image`;
+  return {
+    title:link.name,
+    description,
+    alternates:{canonical:`/s/${slug}`},
+    robots:{index:false,follow:link.status==='ACTIVE'},
+    openGraph:{
+      type:"website",
+      url:`/s/${slug}`,
+      title:link.name,
+      description,
+      siteName:SITE_NAME,
+      locale:"vi_VN",
+      images:[{url:image,width:1200,height:630,alt:`${link.name} — ${SITE_NAME}`}]
+    },
+    twitter:{card:"summary_large_image",title:link.name,description,images:[image]}
+  };
+}
+
 export default async function PublicSharePage({params}:{params:Promise<{slug:string}>}){
   const {slug}=await params;
-  const result=await query<{id:string;name:string;destination_url:string;description:string|null;slug:string;status:string;visit_count:string}>(`SELECT id,name,destination_url,description,slug,status,visit_count::text FROM share_links WHERE slug=$1 AND status<>'DELETED' LIMIT 1`,[slug]);
-  const link=result.rows[0]; if(!link) notFound();
+  const link=await getPublicLink(slug); if(!link) notFound();
   if(link.status==='LOCKED')return <PublicFrame><div className="public-status"><span className="status-icon">!</span><h1>Share Link tạm thời bị khóa</h1><p>Liên kết này hiện không khả dụng. Vui lòng liên hệ người chia sẻ.</p></div></PublicFrame>;
   const h=await headers(); const ua=h.get('user-agent')||''; const ip=(h.get('x-forwarded-for')||h.get('x-real-ip')||'unknown').split(',')[0].trim();
   await recordValidVisit({linkId:link.id,ip,userAgent:ua,country:h.get('x-vercel-ip-country')||h.get('cf-ipcountry'),referrer:h.get('referer')});
