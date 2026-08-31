@@ -1,0 +1,27 @@
+import { requireAdmin } from "@/lib/auth";
+import { query } from "@/lib/db";
+import { setUserStatusAction,setLinkStatusAction,deleteAnyLinkAction } from "@/actions/admin";
+import { Message } from "@/components/Message";
+import { ConfirmSubmit } from "@/components/ConfirmSubmit";
+import Link from "next/link";
+import { Logo } from "@/components/Logo";
+import { logoutAction } from "@/actions/auth";
+
+export const dynamic = "force-dynamic";
+
+export default async function AdminPage({searchParams}:{searchParams:Promise<{error?:string;success?:string}>}){
+  const admin=await requireAdmin(); const messages=await searchParams;
+  const [stats,users,links,audit]=await Promise.all([
+    query<{users:string;links:string;visits:string;locked:string}>(`SELECT (SELECT COUNT(*) FROM users)::text users,(SELECT COUNT(*) FROM share_links WHERE status<>'DELETED')::text links,(SELECT COUNT(*) FROM visits)::text visits,(SELECT COUNT(*) FROM share_links WHERE status='LOCKED')::text locked`),
+    query<{id:string;username:string;email:string|null;role:string;status:string;created_at:Date}>(`SELECT id,username,email,role,status,created_at FROM users ORDER BY created_at DESC LIMIT 50`),
+    query<{id:string;name:string;slug:string;status:string;visit_count:string;username:string}>(`SELECT l.id,l.name,l.slug,l.status,l.visit_count::text,u.username FROM share_links l JOIN users u ON u.id=l.user_id WHERE l.status<>'DELETED' ORDER BY l.created_at DESC LIMIT 50`),
+    query<{id:string;action:string;target_type:string;target_id:string;created_at:Date;username:string}>(`SELECT a.id::text,a.action,a.target_type,a.target_id,a.created_at,u.username FROM audit_logs a JOIN users u ON u.id=a.admin_user_id ORDER BY a.created_at DESC LIMIT 20`)
+  ]);
+  const s=stats.rows[0]??{users:"0",links:"0",visits:"0",locked:"0"};
+  return <div className="admin-shell"><header className="admin-header"><Logo href="/admin"/><nav><Link href="/dashboard">User Dashboard</Link><span className="badge badge-active">ADMIN</span><form action={logoutAction}><button className="btn btn-ghost btn-sm">Đăng xuất</button></form></nav></header><main className="admin-content"><div className="admin-welcome">Đăng nhập với <strong>{admin.display_name||admin.username}</strong></div><div className="page-heading"><div><span className="eyebrow">ADMIN PANEL</span><h1>Quản trị SHARE LINK</h1><p>Quyền được xác thực ở server. Không có biến JavaScript client nào có thể mở khu vực này.</p></div></div><Message error={messages.error} success={messages.success}/><div className="stats-grid"><Stat label="Tổng người dùng" value={s.users}/><Stat label="Tổng Share Link" value={s.links}/><Stat label="Tổng lượt truy cập" value={Number(s.visits).toLocaleString("vi-VN")}/><Stat label="Link bị khóa" value={s.locked}/></div>
+    <section className="panel"><div className="panel-head"><div><h2>Người dùng</h2><p>50 tài khoản mới nhất.</p></div></div><div className="table-wrap"><table><thead><tr><th>User</th><th>Vai trò</th><th>Trạng thái</th><th>Ngày tạo</th><th>Quản lý</th></tr></thead><tbody>{users.rows.map(u=><tr key={u.id}><td><strong>{u.username}</strong><small className="cell-sub">{u.email||"Không có email"}</small></td><td>{u.role}</td><td><span className={`badge badge-${u.status.toLowerCase()}`}>{u.status}</span></td><td>{new Date(u.created_at).toLocaleDateString("vi-VN")}</td><td><form action={setUserStatusAction}><input type="hidden" name="userId" value={u.id}/><input type="hidden" name="status" value={u.status==='ACTIVE'?'LOCKED':'ACTIVE'}/><button className={`btn btn-sm ${u.status==='ACTIVE'?'btn-danger':'btn-secondary'}`}>{u.status==='ACTIVE'?'Khóa':'Mở khóa'}</button></form></td></tr>)}</tbody></table></div></section>
+    <section className="panel"><div className="panel-head"><div><h2>Share Link toàn hệ thống</h2><p>Admin có thể khóa, mở khóa hoặc xóa link vi phạm.</p></div></div><div className="table-wrap"><table><thead><tr><th>Link</th><th>Chủ sở hữu</th><th>Visit</th><th>Trạng thái</th><th>Quản lý</th></tr></thead><tbody>{links.rows.map(l=><tr key={l.id}><td><strong>{l.name}</strong><small className="cell-sub">/s/{l.slug}</small></td><td>@{l.username}</td><td>{Number(l.visit_count).toLocaleString("vi-VN")}</td><td><span className={`badge badge-${l.status.toLowerCase()}`}>{l.status}</span></td><td><div className="actions"><form action={setLinkStatusAction}><input type="hidden" name="linkId" value={l.id}/><input type="hidden" name="status" value={l.status==='ACTIVE'?'LOCKED':'ACTIVE'}/><button className="btn btn-secondary btn-sm">{l.status==='ACTIVE'?'Khóa':'Mở khóa'}</button></form><form action={deleteAnyLinkAction}><input type="hidden" name="linkId" value={l.id}/><ConfirmSubmit message="Xóa Share Link này khỏi hệ thống?">Xóa</ConfirmSubmit></form></div></td></tr>)}</tbody></table></div></section>
+    <section className="panel"><div className="panel-head"><div><h2>Audit Log</h2><p>Lịch sử thao tác quản trị gần nhất.</p></div></div>{audit.rowCount?<div className="audit-list">{audit.rows.map(a=><div key={a.id}><span>{new Date(a.created_at).toLocaleString("vi-VN")}</span><strong>{a.action}</strong><small>{a.username} · {a.target_type} · {a.target_id}</small></div>)}</div>:<div className="empty-state">Chưa có thao tác Admin.</div>}</section>
+  </main></div>;
+}
+function Stat({label,value}:{label:string;value:string}){return <div className="stat-card"><span>{label}</span><strong>{value}</strong><small>toàn hệ thống</small></div>}
