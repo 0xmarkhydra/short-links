@@ -6,13 +6,26 @@ export const alt = "SHARE LINK preview";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+type PreviewLink = {name:string;description:string|null;destination_url:string;status:string;slug:string};
+
+async function resolvePreviewLink(slug:string) {
+  if (!/^[a-z0-9-]{3,64}$/.test(slug)) return null;
+  const result=await query<PreviewLink>(
+    `SELECT name,description,destination_url,status,slug
+     FROM share_links
+     WHERE status<>'DELETED' AND (slug=$1 OR slug LIKE $2)
+     ORDER BY CASE WHEN slug=$1 THEN 0 ELSE 1 END
+     LIMIT 2`,
+    [slug,`${slug}-%`]
+  );
+  const exact=result.rows.find((row)=>row.slug===slug);
+  if(exact)return exact;
+  return result.rows.length===1 ? result.rows[0] : null;
+}
+
 export default async function ShareOpenGraphImage({params}:{params:Promise<{slug:string}>}) {
   const {slug}=await params;
-  const result=await query<{name:string;description:string|null;destination_url:string;status:string}>(
-    `SELECT name,description,destination_url,status FROM share_links WHERE slug=$1 AND status<>'DELETED' LIMIT 1`,
-    [slug]
-  );
-  const link=result.rows[0];
+  const link=await resolvePreviewLink(slug);
   const name=link?.name || "Share Link";
   const description=(link?.description?.trim() || "Mở liên kết được chia sẻ qua SHARE LINK.").slice(0,180);
   let host="Liên kết chia sẻ";
