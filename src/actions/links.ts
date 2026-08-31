@@ -27,6 +27,13 @@ async function availableSlug(base: string, currentId?: string) {
   throw new Error("Không thể tạo slug duy nhất. Vui lòng thử slug khác.");
 }
 
+function normalizeDestinationInput(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 function fallbackName(destinationUrl: string) {
   try {
     const host = new URL(destinationUrl).hostname.replace(/^www\./i, "");
@@ -42,9 +49,19 @@ function fallbackName(destinationUrl: string) {
   }
 }
 
+function automaticSlugSeed(name: string, destinationUrl: string) {
+  const candidates = [slugify(name), slugify(fallbackName(destinationUrl))];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const normalized = normalizeSlug(candidate);
+    if (!normalized.error) return normalized.slug;
+  }
+  return `link-${randomSlugSuffix()}`;
+}
+
 export async function createLinkAction(formData: FormData) {
   const user = await requireUser();
-  const destinationUrl = cleanText(formData.get("destinationUrl"), 2000);
+  const destinationUrl = normalizeDestinationInput(cleanText(formData.get("destinationUrl"), 2000));
   const customName = cleanText(formData.get("name"), 120);
   const customDescription = cleanText(formData.get("description"), 500);
   const requestedSlug = cleanText(formData.get("slug"), 64);
@@ -63,19 +80,19 @@ export async function createLinkAction(formData: FormData) {
     customDescription || cleanText(destinationMeta?.description ?? null, 500)
   ).slice(0, 500);
 
-  const seed = requestedSlug || slugify(name) || slugify(fallbackName(destinationUrl)) || `link-${randomSlugSuffix()}`;
   let slug: string;
   try {
-    slug = requestedSlug ? normalizeSlug(seed).slug : await availableSlug(seed);
-    const normalized = normalizeSlug(slug);
-    if (normalized.error) fail("/create-link", normalized.error);
     if (requestedSlug) {
+      const normalized = normalizeSlug(requestedSlug);
+      if (normalized.error) fail("/create-link", normalized.error);
       const exists = await query(`SELECT 1 FROM share_links WHERE slug = $1 LIMIT 1`, [normalized.slug]);
       if (exists.rowCount) fail("/create-link", "Slug này đã được sử dụng. Vui lòng chọn slug khác.");
       slug = normalized.slug;
+    } else {
+      slug = await availableSlug(automaticSlugSeed(name, destinationUrl));
     }
   } catch (error) {
-    fail("/create-link", error instanceof Error ? error.message : "Slug không hợp lệ.");
+    fail("/create-link", error instanceof Error ? error.message : "Không thể tự tạo đường dẫn ngắn.");
   }
 
   const id = randomUUID();
