@@ -62,6 +62,10 @@ export async function recordValidVisit(input: {
   const client = await db.connect();
   try {
     await client.query("BEGIN");
+    await client.query(
+      `SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))`,
+      [input.linkId, visitor.hash]
+    );
     const history = await client.query<{ seen_before: boolean; seen_recently: boolean }>(
       `SELECT
          EXISTS(SELECT 1 FROM visits WHERE link_id=$1 AND visitor_hash=$2) AS seen_before,
