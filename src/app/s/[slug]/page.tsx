@@ -22,8 +22,18 @@ type PublicLink = {
 };
 
 const getPublicLink = cache(async (slug:string) => {
-  const result=await query<PublicLink>(`SELECT id,name,destination_url,description,slug,status,visit_count::text FROM share_links WHERE slug=$1 AND status<>'DELETED' LIMIT 1`,[slug]);
-  return result.rows[0] ?? null;
+  if (!/^[a-z0-9-]{3,64}$/.test(slug)) return null;
+  const result=await query<PublicLink>(
+    `SELECT id,name,destination_url,description,slug,status,visit_count::text
+     FROM share_links
+     WHERE status<>'DELETED' AND (slug=$1 OR slug LIKE $2)
+     ORDER BY CASE WHEN slug=$1 THEN 0 ELSE 1 END
+     LIMIT 2`,
+    [slug,`${slug}-%`]
+  );
+  const exact=result.rows.find((row)=>row.slug===slug);
+  if(exact)return exact;
+  return result.rows.length===1 ? result.rows[0] : null;
 });
 
 export async function generateMetadata({params}:{params:Promise<{slug:string}>}):Promise<Metadata>{
