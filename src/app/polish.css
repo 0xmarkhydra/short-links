@@ -1,0 +1,209 @@
+/* Final function-first polish layer. Keep the interface dense, quiet and mobile-native. */
+:root{--content-max:1120px;--hairline:#1d222a;--surface:#0d1014;--surface-2:#11151a}
+
+/* Remove decorative weight. */
+body{background:radial-gradient(circle at 82% -8%,rgba(255,49,71,.055),transparent 24%),var(--bg)}
+.btn{box-shadow:none!important;transform:none!important}
+.btn-primary{background:var(--accent)}
+.btn-secondary,.btn-ghost{background:#11151a;border-color:#252b34}
+.btn:hover{filter:brightness(1.06)}
+
+/* Desktop shell: more room for work, less chrome. */
+@media (min-width:901px){
+  .app-shell{grid-template-columns:204px minmax(0,1fr)}
+  .sidebar{padding:18px 12px}
+  .sidebar .brand-mark{width:30px;height:30px;border-radius:9px}
+  .sidebar .brand{font-size:13px;gap:8px}
+  .side-nav{margin-top:22px;gap:1px}
+  .side-nav .nav-link{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:7px;font-size:12px}
+  .side-nav .nav-icon{display:block;width:17px;height:17px}
+  .nav-link.active{box-shadow:none;background:#15191e}
+  .nav-link.active::before{content:"";width:3px;height:16px;border-radius:9px;background:var(--accent);margin-left:-9px;margin-right:6px}
+  .app-header{height:54px;padding-inline:20px}
+  .header-actions{gap:5px}
+  .header-action{height:32px;min-width:32px;padding:0 9px;border-radius:7px;background:transparent;border-color:transparent}
+  .header-action:hover{background:#11151a;border-color:#232932}
+  .user-chip-link{padding:2px 5px 2px 2px;border-radius:8px}
+  .avatar{width:31px;height:31px;border-radius:8px}
+  .user-meta strong{font-size:12px}
+  .user-meta small{font-size:9px}
+  .app-content{width:min(var(--content-max),calc(100% - 40px));padding:24px 0 64px}
+}
+
+/* Content hierarchy */
+.page-heading{margin-bottom:14px}
+.page-heading h1{font-size:26px;letter-spacing:-.03em}
+.page-heading p{max-width:620px;color:#7f8997}
+.page-heading>.btn{white-space:nowrap}
+.eyebrow{opacity:.8}
+
+/* Metrics are a summary strip, not cards. */
+.stats-grid{border:0;border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline);border-radius:0;background:transparent;margin-bottom:14px}
+.stat-card{padding:11px 14px;background:transparent!important;border-color:var(--hairline)!important}
+.stat-card span{font-size:9px;text-transform:uppercase;letter-spacing:.06em}
+.stat-card strong{font-size:21px;margin-top:3px}
+
+/* Sections stay flat. */
+.panel{border-top-color:var(--hairline);padding:13px 0;margin-bottom:2px}
+.panel-head{margin-bottom:9px}
+.panel-head h2,.panel h2{font-size:14px}
+.panel-head>a{font-size:11px;font-weight:700}
+.link-row{padding:9px 0;gap:10px}
+.link-main strong{font-size:12px}
+.link-main span{font-size:10px}
+.link-metric{font-size:10px;color:#8b95a3}
+.badge{padding:3px 6px;font-size:8px}
+.empty-state{padding:18px 8px}
+
+/* Forms: task first, decoration second. */
+.form-panel{max-width:640px}
+.form-stack{gap:11px}
+.form-stack label{font-size:11px;color:#b7bec8}
+.form-stack input,.form-stack textarea,.search-bar input{background:#0b0e12;border-color:#242a33}
+.form-stack textarea{min-height:78px}
+.form-stack>.btn{min-width:132px}
+.slug-input{background:#0b0e12;border-color:#242a33}
+
+/* Success and messages should not dominate the page. */
+.success-card{padding:13px 14px;border-radius:9px;border-left:3px solid var(--success);border-top-color:#203029;border-right-color:#203029;border-bottom-color:#203029;background:#0e1312}
+.success-card h2{font-size:16px}
+.success-card dl{padding-top:9px}
+.message{padding:9px 11px;border-radius:8px;margin-bottom:12px;font-size:12px}
+
+/* Tables read like tools, not cards. */
+.table-wrap th{font-size:9px;padding:7px 9px}
+.table-wrap td{font-size:11px;padding:8px 9px}
+.actions{gap:4px}
+.actions .btn{min-height:32px}
+.search-bar{margin-bottom:9px}
+
+/* Analytics */
+.chart{height:150px}
+.two-col{gap:12px}
+.breakdown{gap:7px;margin-top:8px}
+.breakdown>div{font-size:9px}
+.breakdown>div>div{height:4px}
+
+/* Profile/settings */
+.profile-summary{gap:12px;padding:9px 0}
+.avatar-lg{width:42px;height:42px;border-radius:10px;font-size:15px}
+.detail-list{margin-top:8px}
+.detail-list div{padding:7px 0}
+.detail-list dt{font-size:10px}
+.detail-list dd{font-size:12px}
+
+/* Landing: communicate value without six oversized blocks. */
+.landing-header{height:64px}
+.hero{min-height:560px;padding:58px 0 72px;gap:52px}
+.hero h1{font-size:clamp(46px,6vw,72px);margin-bottom:20px}
+.hero-copy>p{font-size:16px;line-height:1.6;margin-bottom:24px;max-width:560px}
+.trust-row{margin-top:18px}
+.hero-preview{min-height:390px}
+.preview-window{max-width:430px;padding:17px;border-radius:18px;transform:rotate(1deg)}
+.preview-top{margin-bottom:18px}
+.preview-stat-grid div{padding:15px;border-radius:10px}
+.preview-stat-grid strong{font-size:24px}
+.preview-line{padding:12px;border-radius:10px}
+.preview-chart{height:120px;padding:12px;border-radius:10px}
+.feature-section{padding:64px 0 82px}
+.section-heading{margin-bottom:24px}
+.section-heading h2{font-size:34px}
+.section-heading p{font-size:14px}
+.feature-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:0;border-top:1px solid var(--hairline)}
+.feature-card{min-height:0;padding:18px 16px;border:0;border-bottom:1px solid var(--hairline);border-radius:0;background:transparent;transform:none!important}
+.feature-card:nth-child(odd){border-right:1px solid var(--hairline)}
+.feature-card h3{font-size:16px;margin:18px 0 4px}
+.feature-card p{font-size:12px;line-height:1.55}
+.footer{padding:24px 0}
+
+/* Auth: smaller dialog, faster scan. */
+.auth-card{max-width:410px;padding:25px;border-radius:15px;background:#0d1014;box-shadow:0 18px 60px rgba(0,0,0,.22)}
+.auth-heading{margin:24px 0 18px}
+.auth-heading h1{font-size:26px}
+.auth-heading p,.auth-switch{font-size:12px}
+
+/* Mobile-native chrome and tighter content. */
+@media (max-width:900px){
+  :root{--mobile-gutter:12px;--mobile-nav-h:58px}
+  .app-header{height:52px;padding:0 12px}
+  .app-header .brand-mark{width:28px;height:28px;border-radius:8px}
+  .app-header .brand{font-size:12px;gap:7px}
+  .header-actions{gap:3px}
+  .header-action{height:32px;min-width:32px;padding:0 7px;border-radius:8px;border-color:transparent;background:transparent}
+  .avatar{width:32px;height:32px;border-radius:9px}
+  .app-content{padding:12px 10px calc(58px + env(safe-area-inset-bottom) + 14px)}
+  .page-heading{margin-bottom:10px;gap:8px}
+  .page-heading h1{font-size:21px;line-height:1.12}
+  .page-heading>.btn{min-height:38px}
+
+  .stats-grid{grid-template-columns:repeat(4,minmax(0,1fr));border-left:0;border-right:0;overflow:visible}
+  .stat-card{padding:9px 7px;border-bottom:0!important;border-right:1px solid var(--hairline)!important}
+  .stat-card:last-child{border-right:0!important}
+  .stat-card strong{font-size:18px}
+  .stat-card span{font-size:7.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .panel{padding:10px 0}
+  .panel-head{align-items:center;margin-bottom:7px}
+  .panel-head h2{font-size:13px}
+  .link-row{padding:8px 0}
+  .empty-state{padding:16px 6px}
+
+  .form-stack{gap:10px}
+  .form-stack input,.form-stack textarea,.search-bar input{min-height:42px}
+  .form-stack>.btn{min-height:42px}
+  .success-card{padding:11px 12px}
+
+  /* Flat bottom bar: less floating-card feeling, more native utility. */
+  .mobile-nav{left:0;right:0;bottom:0;border:0;border-top:1px solid rgba(47,54,64,.78);border-radius:0;padding:3px 8px calc(3px + env(safe-area-inset-bottom));background:rgba(9,11,14,.94);box-shadow:0 -8px 28px rgba(0,0,0,.22)}
+  .mobile-nav-items{gap:0}
+  .mobile-nav .nav-link{min-height:46px;border-radius:8px;padding:4px 2px;gap:2px;font-size:8px}
+  .mobile-nav .nav-icon{width:16px;height:16px}
+  .mobile-nav .nav-link.active{background:transparent;color:#fff}
+  .mobile-nav .nav-link.active::after{content:"";position:absolute;top:1px;width:18px;height:2px;border-radius:4px;background:var(--accent)}
+  .mobile-nav .nav-link{position:relative}
+
+  .links-panel tr{padding:9px 0}
+  .links-panel td:nth-child(6){margin-top:5px}
+  .links-panel .actions{gap:4px}
+  .links-panel .actions .btn,.links-panel .actions form .btn{min-height:32px;font-size:9px;border-radius:7px}
+
+  .chart{height:135px}
+  .admin-content{padding:12px 10px 32px}
+
+  .public-top{margin-bottom:12px}
+  .public-card,.public-status{padding:17px 14px;border-radius:12px}
+  .public-card h1,.public-status h1{font-size:24px}
+  .destination{padding:9px 10px;border-radius:9px}
+
+  /* Landing mobile */
+  .landing-header{height:56px}
+  .hero{gap:28px;padding:32px 0 48px}
+  .hero h1{font-size:clamp(38px,11vw,52px);margin-bottom:14px}
+  .hero-copy>p{font-size:14px;line-height:1.55;margin-bottom:18px}
+  .hero-actions .btn{min-height:44px}
+  .trust-row{font-size:10px;margin-top:14px}
+  .preview-window{padding:12px;border-radius:12px}
+  .preview-stat-grid div{padding:11px}
+  .preview-stat-grid strong{font-size:20px}
+  .preview-chart{height:94px}
+  .feature-section{padding:44px 0 54px}
+  .section-heading h2{font-size:28px}
+  .feature-grid{grid-template-columns:1fr}
+  .feature-card:nth-child(odd){border-right:0}
+  .feature-card{padding:14px 4px}
+  .feature-card h3{margin:10px 0 3px;font-size:15px}
+  .feature-card p{font-size:11px}
+
+  .auth-card{margin-top:2vh;padding:18px 16px;border-radius:12px}
+  .auth-heading{margin:20px 0 16px}
+  .auth-heading h1{font-size:23px}
+}
+
+@media (max-width:420px){
+  .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stat-card{border-bottom:1px solid var(--hairline)!important}
+  .stat-card:nth-child(2n){border-right:0!important}
+  .stat-card:nth-last-child(-n+2){border-bottom:0!important}
+  .page-heading>.btn{width:100%}
+  .landing-nav .btn{padding-inline:10px}
+}
