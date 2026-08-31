@@ -9,11 +9,21 @@ if (!connectionString) {
   process.exit(1);
 }
 
+const databaseSchema = (process.env.DATABASE_SCHEMA || "public").trim();
+if (!/^[a-z][a-z0-9_]*$/.test(databaseSchema)) {
+  console.error("DATABASE_SCHEMA must contain only lowercase letters, numbers and underscores");
+  process.exit(1);
+}
+
 const pool = new Pool({ connectionString });
+const client = await pool.connect();
 try {
+  await client.query(`CREATE SCHEMA IF NOT EXISTS "${databaseSchema}"`);
+  await client.query(`SET search_path TO "${databaseSchema}", public`);
   const migration = await fs.readFile(path.join(process.cwd(), "db/migrations/001_init.sql"), "utf8");
-  await pool.query(migration);
-  console.log("Database migration completed.");
+  await client.query(migration);
+  console.log(`Database migration completed in schema ${databaseSchema}.`);
 } finally {
+  client.release();
   await pool.end();
 }
