@@ -54,16 +54,6 @@ try {
       console.log(`Default admin created and verified in schema ${databaseSchema}: ${seedUsername}`);
     }
   }
-
-  // One-time production credential repair. Remove after the deployment succeeds.
-  const repairedPasswordHash = "scrypt:effd151c14239209be66b54fa2a9c9d1:3e0706fe7d1d97756b05e8525d7a819fb8d69ac2b1495ce1ad7f59283dca0f7abdb54d864c99ccd4142dc922a5dee68de282bbc2dacfe57e96601c5398229413";
-  const repaired = await client.query(
-    `UPDATE users SET password_hash=$1,status='ACTIVE',updated_at=NOW() WHERE LOWER(username)='admin' AND role='ADMIN' RETURNING id,username`,
-    [repairedPasswordHash]
-  );
-  if (repaired.rowCount !== 1) throw new Error(`Admin credential repair expected exactly one admin account, found ${repaired.rowCount}.`);
-  await client.query(`DELETE FROM sessions WHERE user_id=$1`, [repaired.rows[0].id]);
-  console.log(`Admin credential repair applied and verified in schema ${databaseSchema}: ${repaired.rows[0].username}`);
 } finally {
   client.release();
   await pool.end();
