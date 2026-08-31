@@ -22,7 +22,8 @@ async function availableSlug(base: string, currentId?: string) {
       [candidate, currentId ?? null]
     );
     if (!found.rowCount) return candidate;
-    candidate = `${normalized.slug.slice(0, 56)}-${randomSlugSuffix()}`;
+    const compactBase = normalized.slug.slice(0, 22).replace(/-+$/g, "") || "link";
+    candidate = `${compactBase}-${randomSlugSuffix().slice(0, 4)}`;
   }
   throw new Error("Không thể tạo slug duy nhất. Vui lòng thử slug khác.");
 }
@@ -49,14 +50,22 @@ function fallbackName(destinationUrl: string) {
   }
 }
 
+function compactSlug(input: string) {
+  const full = slugify(input);
+  if (!full) return "";
+  const words = full.split("-").filter(Boolean).slice(0, 3);
+  const compact = words.join("-").slice(0, 28).replace(/-+$/g, "");
+  return compact.length >= 3 ? compact : full.slice(0, 28).replace(/-+$/g, "");
+}
+
 function automaticSlugSeed(name: string, destinationUrl: string) {
-  const candidates = [slugify(name), slugify(fallbackName(destinationUrl))];
+  const candidates = [compactSlug(name), compactSlug(fallbackName(destinationUrl))];
   for (const candidate of candidates) {
     if (!candidate) continue;
     const normalized = normalizeSlug(candidate);
     if (!normalized.error) return normalized.slug;
   }
-  return `link-${randomSlugSuffix()}`;
+  return `link-${randomSlugSuffix().slice(0, 4)}`;
 }
 
 export async function createLinkAction(formData: FormData) {
