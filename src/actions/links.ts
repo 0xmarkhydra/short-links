@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { query } from "@/lib/db";
+import { getDestinationMetadata } from "@/lib/destination-meta";
 import { cleanText, normalizeSlug, randomSlugSuffix, slugify, validateDestinationUrl } from "@/lib/validation";
 
 function fail(path: string, message: string): never {
@@ -26,17 +27,43 @@ async function availableSlug(base: string, currentId?: string) {
   throw new Error("Không thể tạo slug duy nhất. Vui lòng thử slug khác.");
 }
 
+function fallbackName(destinationUrl: string) {
+  try {
+    const host = new URL(destinationUrl).hostname.replace(/^www\./i, "");
+    const firstPart = host.split(".")[0] || "Share Link";
+    return firstPart
+      .split(/[-_]+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ")
+      .slice(0, 120) || "Share Link";
+  } catch {
+    return "Share Link";
+  }
+}
+
 export async function createLinkAction(formData: FormData) {
   const user = await requireUser();
-  const name = cleanText(formData.get("name"), 120);
   const destinationUrl = cleanText(formData.get("destinationUrl"), 2000);
-  const description = cleanText(formData.get("description"), 500);
+  const customName = cleanText(formData.get("name"), 120);
+  const customDescription = cleanText(formData.get("description"), 500);
   const requestedSlug = cleanText(formData.get("slug"), 64);
-  if (!name) fail("/create-link", "Tên Link không được để trống.");
+
   const urlError = validateDestinationUrl(destinationUrl);
   if (urlError) fail("/create-link", urlError);
 
-  const seed = requestedSlug || slugify(name) || `link-${randomSlugSuffix()}`;
+  const destinationMeta = await getDestinationMetadata(destinationUrl);
+  const name = (
+    customName ||
+    cleanText(destinationMeta?.title, 120) ||
+    cleanText(destinationMeta?.siteName, 120) ||
+    fallbackName(destinationUrl)
+  ).slice(0, 120);
+  const description = (
+    customDescription || cleanText(destinationMeta?.description, 500)
+  ).slice(0, 500);
+
+  const seed = requestedSlug || slugify(name) || slugify(fallbackName(destinationUrl)) || `link-${randomSlugSuffix()}`;
   let slug: string;
   try {
     slug = requestedSlug ? normalizeSlug(seed).slug : await availableSlug(seed);
