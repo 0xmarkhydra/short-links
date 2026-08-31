@@ -1,7 +1,7 @@
 export function ExternalLinkGate({ destinationUrl, destinationHost }: { destinationUrl: string; destinationHost: string }) {
   return <>
     <a className="btn btn-primary btn-wide btn-lg" href="#external-link-warning" role="button">
-      TRUY CẬP LINK →
+      KIỂM TRA & TIẾP TỤC →
     </a>
 
     <div
@@ -15,10 +15,10 @@ export function ExternalLinkGate({ destinationUrl, destinationHost }: { destinat
       <a className="external-gate-backdrop" href="#" aria-label="Đóng cảnh báo" />
       <section className="external-gate-sheet">
         <div className="external-gate-head">
-          <span className="external-gate-icon" aria-hidden="true">↗</span>
+          <span className="external-gate-icon" aria-hidden="true">!</span>
           <div>
-            <small>BẠN SẮP RỜI SHARE LINK</small>
-            <h2 id="external-gate-title">Tiếp tục đến website đích?</h2>
+            <small>LINK CẦN KIỂM TRA THÊM</small>
+            <h2 id="external-gate-title">Bạn vẫn muốn tiếp tục?</h2>
           </div>
         </div>
 
@@ -28,13 +28,12 @@ export function ExternalLinkGate({ destinationUrl, destinationHost }: { destinat
         </div>
 
         <p id="external-gate-description">
-          SHARE LINK chỉ cung cấp liên kết trung gian và không kiểm soát nội dung, sản phẩm, giao dịch hay chính sách của website bên ngoài.
-          Khi tiếp tục, bạn xác nhận đã tự kiểm tra website đích và <strong>tự chịu trách nhiệm đối với mọi quyết định, giao dịch và rủi ro phát sinh sau khi rời SHARE LINK.</strong>
+          SHARE LINK phát hiện một số tín hiệu bất thường ở URL này. Hãy kiểm tra đúng tên miền trước khi mở. Cảnh báo không có nghĩa website chắc chắn độc hại.
         </p>
 
         <div className="external-gate-actions">
           <a className="btn btn-secondary" href="#">Quay lại</a>
-          <a className="btn btn-primary" href={destinationUrl}>Tôi hiểu, tiếp tục →</a>
+          <a className="btn btn-primary" href={destinationUrl}>Vẫn tiếp tục →</a>
         </div>
       </section>
     </div>
