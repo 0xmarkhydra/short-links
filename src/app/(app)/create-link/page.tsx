@@ -3,6 +3,7 @@ import { query } from "@/lib/db";
 import { createLinkAction } from "@/actions/links";
 import { Message } from "@/components/Message";
 import { CopyButton } from "@/components/CopyButton";
+import { CreateLinkSubmitButton } from "@/components/CreateLinkSubmitButton";
 
 export default async function CreateLinkPage({ searchParams }: { searchParams: Promise<{error?:string;created?:string}> }) {
   const user = await requireUser();
@@ -23,7 +24,7 @@ export default async function CreateLinkPage({ searchParams }: { searchParams: P
           Link cần chia sẻ
           <div className="quick-url-row">
             <input name="destinationUrl" type="text" required autoFocus inputMode="url" autoComplete="url" spellCheck={false} placeholder="example.com/bai-viet" />
-            <button className="btn btn-primary quick-create-button" type="submit">Tạo link</button>
+            <CreateLinkSubmitButton />
           </div>
           <small>Chỉ cần dán link. Hệ thống tự thêm https:// nếu thiếu và tự lấy tiêu đề, mô tả, slug.</small>
         </label>
