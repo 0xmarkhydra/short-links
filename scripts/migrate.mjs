@@ -29,8 +29,17 @@ const client = await pool.connect();
 try {
   await client.query(`CREATE SCHEMA IF NOT EXISTS "${databaseSchema}"`);
   await client.query(`SET search_path TO "${databaseSchema}", public`);
-  const migration = await fs.readFile(path.join(process.cwd(), "db/migrations/001_init.sql"), "utf8");
-  await client.query(migration);
+
+  const migrationsDir = path.join(process.cwd(), "db/migrations");
+  const migrationFiles = (await fs.readdir(migrationsDir))
+    .filter((file) => /^\d+.*\.sql$/i.test(file))
+    .sort((a, b) => a.localeCompare(b));
+
+  for (const file of migrationFiles) {
+    const migration = await fs.readFile(path.join(migrationsDir, file), "utf8");
+    await client.query(migration);
+    console.log(`Applied migration ${file} in schema ${databaseSchema}.`);
+  }
   console.log(`Database migration completed in schema ${databaseSchema}.`);
 
   const seedUsername = (process.env.DEFAULT_ADMIN_USERNAME || "").trim();
