@@ -25,13 +25,20 @@ export function ExternalLinkGate({ destinationUrl, destinationHost }: { destinat
     <button className="btn btn-primary btn-wide btn-lg" type="button" onClick={() => setOpen(true)}>
       TRUY CẬP LINK →
     </button>
-    <dialog ref={dialogRef} className="external-gate" onClose={() => setOpen(false)} onCancel={(event) => { event.preventDefault(); close(); }}>
+    <dialog
+      ref={dialogRef}
+      className="external-gate"
+      aria-labelledby="external-gate-title"
+      aria-describedby="external-gate-description"
+      onClose={() => setOpen(false)}
+      onCancel={(event) => { event.preventDefault(); close(); }}
+    >
       <div className="external-gate-head">
         <span className="external-gate-icon" aria-hidden="true">↗</span>
-        <div><small>BẠN SẮP RỜI SHARE LINK</small><h2>Tiếp tục đến website đích?</h2></div>
+        <div><small>BẠN SẮP RỜI SHARE LINK</small><h2 id="external-gate-title">Tiếp tục đến website đích?</h2></div>
       </div>
       <div className="external-gate-host"><small>Website đích</small><strong>{destinationHost}</strong></div>
-      <p>
+      <p id="external-gate-description">
         SHARE LINK chỉ cung cấp liên kết trung gian và không kiểm soát nội dung, sản phẩm, giao dịch hay chính sách của website bên ngoài.
         Khi tiếp tục, bạn xác nhận đã tự kiểm tra website đích và <strong>tự chịu trách nhiệm đối với mọi quyết định, giao dịch và rủi ro phát sinh sau khi rời SHARE LINK.</strong>
       </p>
