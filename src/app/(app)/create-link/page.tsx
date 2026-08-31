@@ -22,10 +22,10 @@ export default async function CreateLinkPage({ searchParams }: { searchParams: P
         <label className="quick-url-label">
           Link cần chia sẻ
           <div className="quick-url-row">
-            <input name="destinationUrl" type="url" required autoFocus inputMode="url" autoComplete="url" placeholder="https://example.com/bai-viet" />
+            <input name="destinationUrl" type="text" required autoFocus inputMode="url" autoComplete="url" spellCheck={false} placeholder="example.com/bai-viet" />
             <button className="btn btn-primary quick-create-button" type="submit">Tạo link</button>
           </div>
-          <small>Tiêu đề, mô tả và slug sẽ được lấy/tạo tự động.</small>
+          <small>Chỉ cần dán link. Hệ thống tự thêm https:// nếu thiếu và tự lấy tiêu đề, mô tả, slug.</small>
         </label>
 
         <details className="advanced-fields">
