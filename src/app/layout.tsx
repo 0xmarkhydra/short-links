@@ -3,6 +3,7 @@ import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 import "./mobile.css";
 import "./compact.css";
+import "./polish.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
