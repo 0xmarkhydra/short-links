@@ -20,6 +20,10 @@ function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
+function redirectMessage(path: string, key: "error" | "success", message: string): never {
+  redirect(`${path}?${key}=${encodeURIComponent(message)}`);
+}
+
 export async function createSession(userId: string, remember = false) {
   const raw = randomBytes(32).toString("base64url");
   const tokenHash = hashToken(raw);
@@ -66,12 +70,12 @@ export async function destroyAllSessions(userId: string) {
 
 export async function requireUser() {
   const user = await getCurrentUser();
-  if (!user) redirect("/login?error=Vui+lòng+đăng+nhập+để+tiếp+tục.");
+  if (!user) redirectMessage("/login", "error", "Vui lòng đăng nhập để tiếp tục.");
   return user;
 }
 
 export async function requireAdmin() {
   const user = await requireUser();
-  if (user.role !== "ADMIN") redirect("/dashboard?error=Bạn+không+có+quyền+truy+cập+Admin.");
+  if (user.role !== "ADMIN") redirectMessage("/dashboard", "error", "Bạn không có quyền truy cập Admin.");
   return user;
 }
