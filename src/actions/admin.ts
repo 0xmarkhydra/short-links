@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { query } from "@/lib/db";
+import { scanAndPersistLinkRisk } from "@/lib/risk";
 import { cleanText } from "@/lib/validation";
 
 function fail(message: string): never {
@@ -36,6 +37,20 @@ export async function setLinkStatusAction(formData: FormData) {
   if (!["ACTIVE","LOCKED"].includes(status)) fail("Trạng thái không hợp lệ.");
   await query(`UPDATE share_links SET status=$1,updated_at=NOW() WHERE id=$2 AND status <> 'DELETED'`, [status, linkId]);
   await audit(admin.id, "LINK_STATUS_UPDATED", "SHARE_LINK", linkId, { status });
+  revalidatePath("/admin");
+}
+
+export async function rescanLinkRiskAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const linkId = cleanText(formData.get("linkId"), 100);
+  const found = await query<{ destination_url: string }>(
+    `SELECT destination_url FROM share_links WHERE id=$1 AND status<>'DELETED' LIMIT 1`,
+    [linkId]
+  );
+  const link = found.rows[0];
+  if (!link) fail("Không tìm thấy Share Link.");
+  const assessment = await scanAndPersistLinkRisk(linkId, link.destination_url, "MANUAL");
+  await audit(admin.id, "LINK_RISK_RESCANNED", "SHARE_LINK", linkId, assessment);
   revalidatePath("/admin");
 }
 
